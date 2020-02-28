@@ -1,0 +1,18 @@
+{
+    "ENV_PATH": "path where env files are created",
+    "COMPILED_PATH": "path where the compiled file is created",
+    "SITES": [
+        {
+            "NAME": "",
+            "COMPILED_PATH": "",
+            "ENV": {
+                "SCORM_APP_NAME": "",
+                "SCORM_APP_KEY": "",
+                "SCORM_LINK_NAME": "",
+                "SCORM_INVITATION_MAIL": "",
+                "SCORM_LOG_PATH": "where the logs are stored for the user",
+                "DEBUG": "*"
+            }
+        }
+    ]
+}

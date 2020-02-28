@@ -1,0 +1,34 @@
+{
+  "name": "upload-to-scorm",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "dependencies": {
+    "@rusticisoftware/scormcloud-api-v2-client-javascript": "^1.0.0-1",
+    "async": "^3.2.0",
+    "axios": "^0.19.2",
+    "binary-split": "^1.0.5",
+    "bytes": "^3.1.0",
+    "chalk": "^3.0.0",
+    "clipboardy": "^2.1.0",
+    "debug": "^4.1.1",
+    "dotenv": "^8.2.0",
+    "moment": "^2.24.0",
+    "node-media-server": "^2.1.4",
+    "pkg": "^4.4.0",
+    "pretty-ms": "^5.1.0",
+    "split2": "^3.1.1",
+    "strip-ansi": "^6.0.0",
+    "supports-color": "^7.1.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "stats": "node ./helpers/stats.js",
+    "compile": "node ./helpers/createEnv.js && node ./helpers/compileForSites.js",
+    "dev-compile": "node ./helpers/createEnv.js dev && node ./helpers/compileForSites.js dev"
+  },
+  "keywords": [],
+  "author": "Sebastian Banaszkiewicz",
+  "license": "ISC"
+}
