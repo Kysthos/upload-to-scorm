@@ -20,6 +20,7 @@
     "node-media-server": "^2.1.4",
     "pkg": "^4.4.0",
     "pretty-ms": "^5.1.0",
+    "progress": "^2.0.3",
     "split2": "^3.1.1",
     "strip-ansi": "^6.0.0",
     "supports-color": "^7.1.0"

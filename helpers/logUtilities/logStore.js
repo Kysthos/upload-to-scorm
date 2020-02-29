@@ -56,6 +56,11 @@ class LogStore {
   toJSON() {
     return this.logs;
   }
+
+  *[Symbol.iterator]() {
+    for (const log of this.logs)
+      yield log;
+  }
 }
 
 module.exports = LogStore;

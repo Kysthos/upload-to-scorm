@@ -11,7 +11,8 @@ const cpuLen = require("os").cpus().length;
 const split = require("split2");
 const Log = require("./logUtilities/logParser");
 const LogStore = require("./logUtilities/logStore");
-const bytes = require("bytes");
+const ProgressBar = require('progress');
+const chalk = require('chalk')
 
 // get all log directories from the config file
 const dirs = [
@@ -29,7 +30,7 @@ async function main() {
   const error = store.get(log => log.error)
   const unfinished = store.get(log => !log.finished && !log.error)
   const success = store.get(log => !log.error && log.finished)
-
+  console.log(`Errors: ${error.length}`)
 }
 
 async function populateStore(dirs) {
@@ -48,12 +49,18 @@ async function getLogPaths(dir) {
       .filter(el => el && path.extname(el).toUpperCase() === '.LOG')
       .map(f => path.join(dir, f));
   } catch (err) {
-    console.error(`Skipping ${dir}: ${err.message}`);
+    console.error(`Skipping ${chalk.red(dir)}: ${err.message}`);
   }
 }
 
 async function readLogs(logs) {
   try {
+    const bar = new ProgressBar('Parsing logs [:bar] :current/:total (:percent) [:elapsed s]', {
+      total: logs.length,
+      width: 25,
+      complete: chalk.green('='),
+      incomplete: chalk.grey('-')
+    });
     // parse all logs
     await async.eachLimit(
       logs,
@@ -67,12 +74,14 @@ async function readLogs(logs) {
             split(),
             parser,
             err => {
+              bar.tick();
               if (err) return reject(err);
               store.add(parser);
               resolve();
             });
         })
     );
+    console.log(`Parsed ${chalk.yellow(store.logs.reduce((a, log) => a + log.lines.length, 0))} lines of logs!`)
   } catch (err) {
     console.error(`Error while processing: ${err.message}`);
   }
