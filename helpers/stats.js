@@ -1,3 +1,8 @@
+// set threadpool size to the number of cpu cores
+// this will be the number of concurrent log streams
+const cpuLen = require("os").cpus().length;
+process.env.UV_THREADPOOL_SIZE = cpuLen;
+
 const async = require("async");
 const {
   pipeline
@@ -7,7 +12,6 @@ const {
   promises: fs,
   createReadStream
 } = require("fs");
-const cpuLen = require("os").cpus().length;
 const split = require("split2");
 const Log = require("./logUtilities/logParser");
 const LogStore = require("./logUtilities/logStore");
