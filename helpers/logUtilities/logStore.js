@@ -38,6 +38,8 @@ class LogStore {
   }
 
   get(prop, val = null) {
+    if (typeof prop === 'function')
+      return new LogStore(this.logs.filter((log, i) => prop(log.data, i)));
     if (val === null)
       return this.logs
         .map(log => log.data[prop])
@@ -49,6 +51,10 @@ class LogStore {
   getStats() {
     const keys = Object.keys(this.logs[0].data)
     console.log(keys)
+  }
+
+  toJSON() {
+    return this.logs;
   }
 }
 

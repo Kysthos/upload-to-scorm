@@ -1,59 +1,79 @@
-const dirs = [
-  ...new Set(require("../config.json").SITES.map(el => el.ENV.SCORM_LOG_PATH))
-];
-
 const async = require("async");
-const { pipeline } = require("stream");
+const {
+  pipeline
+} = require("stream");
 const path = require("path");
-const { promises: fs, createReadStream } = require("fs");
+const {
+  promises: fs,
+  createReadStream
+} = require("fs");
 const cpuLen = require("os").cpus().length;
 const split = require("split2");
 const Log = require("./logUtilities/logParser");
 const LogStore = require("./logUtilities/logStore");
 const bytes = require("bytes");
 
+// get all log directories from the config file
+const dirs = [
+  ...new Set(require("../config.json").SITES.map(el => el.ENV.SCORM_LOG_PATH))
+];
+
 const store = new LogStore();
 
-Promise.all(dirs.map(folder => readLogs(folder))).then(() => {
-  console.log(store.getUsers());
-  console.log(store.get("duration"));
-  console.log(store.getAverage("duration"));
-  console.log(store.getMedian("duration"));
-  console.log(store.getBiggest("duration"));
-  console.log(store.getLowest("duration"));
-  console.log(store.length);
+main();
 
-  const users = store.getUsers();
-  const userStores = {};
-  for (const user of users) 
-    userStores[user] = store.get('user', user);
+async function main() {
+  // process all log files
+  await populateStore(dirs);
+  // group all logs
+  const error = store.get(log => log.error)
+  const unfinished = store.get(log => !log.finished && !log.error)
+  const success = store.get(log => !log.error && log.finished)
 
-  console.log(userStores)
+}
 
-  // console.log(store.getStats());
-});
+async function populateStore(dirs) {
+  // concatenate all log file paths to one array
+  let paths = (await Promise.all(dirs.map(d => getLogPaths(d))))
+    .filter(d => d)
+    .flat()
+  // read all logs and populate the log store
+  await readLogs(paths);
+}
 
-async function readLogs(dir) {
+// get all logs from a directory
+async function getLogPaths(dir) {
   try {
-    // get all logs
-    const logs = (await fs.readdir(dir))
-      .filter(el => path.extname(el).toUpperCase() === ".LOG")
-      .map(el => path.join(dir, el));
-    // parse each log
+    return (await fs.readdir(dir))
+      .filter(el => el && path.extname(el).toUpperCase() === '.LOG')
+      .map(f => path.join(dir, f));
+  } catch (err) {
+    console.error(`Skipping ${dir}: ${err.message}`);
+  }
+}
+
+async function readLogs(logs) {
+  try {
+    // parse all logs
     await async.eachLimit(
       logs,
       cpuLen,
       async log =>
         new Promise((resolve, reject) => {
+          // Log class extends Writable stream, so we can pipe it
           const parser = new Log(log);
-          pipeline(createReadStream(log), split(), parser, err => {
-            store.add(parser);
-            if (err) return reject(err);
-            resolve();
-          });
+          pipeline(
+            createReadStream(log),
+            split(),
+            parser,
+            err => {
+              if (err) return reject(err);
+              store.add(parser);
+              resolve();
+            });
         })
     );
-  } catch(err) {
-    console.error(`Error while processing: ${dir}. ${err.message}`)
+  } catch (err) {
+    console.error(`Error while processing: ${err.message}`);
   }
 }
