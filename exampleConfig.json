@@ -1,6 +1,7 @@
 {
     "ENV_PATH": "path where env files are created",
     "COMPILED_PATH": "path where the compiled file is created",
+    "OLD_LOGS": ["to store additional log folders"],
     "SITES": [
         {
             "NAME": "",

@@ -1,4 +1,8 @@
+const bytes = require('bytes')
+const moment = require('moment')
 const Log = require("./logParser");
+const MiddlewareManager = require('./middleware');
+
 class LogStore {
   constructor(init) {
     this.logs = [];
@@ -18,22 +22,25 @@ class LogStore {
     return [...new Set(this.get("user"))].sort();
   }
 
-  getAverage(prop) {
+  calcAverage(prop) {
     const props = this.get(prop);
     return props.reduce((a, b) => a + b) / props.length;
   }
 
-  getMedian(prop) {
+  calcMedian(prop) {
     const props = this.get(prop);
     props.sort((a, b) => a - b);
-    return props[Math.floor(props.length / 2)];
+    if (props.length % 2 !== 0)
+      return props[Math.floor(props.length / 2)];
+    const index = props.length / 2;
+    return (props[index] + props[index - 1]) / 2;
   }
 
-  getBiggest(prop) {
+  calcBiggest(prop) {
     return Math.max(...this.get(prop));
   }
 
-  getLowest(prop) {
+  calcLowest(prop) {
     return Math.min(...this.get(prop));
   }
 
@@ -49,8 +56,46 @@ class LogStore {
   }
 
   getStats() {
-    const keys = Object.keys(this.logs[0].data)
-    console.log(keys)
+    const manager = new MiddlewareManager();
+    const stats = {
+      total: this.length
+    };
+
+    const forStats = ['zipSize', 'duration', 'uploadTime', 'scormProcessingTime', ]
+    const valuesToGet = ['average', 'median', 'biggest', 'lowest'];
+
+    const reg = /^(.{1})(.+)$/;
+    const firstUpper = (match, p1, p2) => `${p1.toUpperCase()}${p2}`;
+    for (const stat of forStats)
+      for (const value of valuesToGet) {
+        const fnName = `calc${value.replace(reg, firstUpper)}`
+        manager.use(stat, (obj, next) => {
+          obj[value] = this[fnName](stat);
+          next();
+        })
+      }
+
+    // stats middlewares
+    const toBytes = (obj, next) => {
+      for (const value of valuesToGet)
+        obj[value] = bytes(obj[value]);
+      next();
+    }
+    const humanizeDuration = (obj, next) => {
+      for (const value of valuesToGet)
+        obj[value] = moment.duration(obj[value]).seconds() + ' s';
+      next();
+    }
+
+    manager.use('zipSize', toBytes);
+    manager.use('duration', humanizeDuration);
+    manager.use('uploadTime', humanizeDuration);
+    manager.use('scormProcessingTime', humanizeDuration);
+
+    for (const stat of forStats)
+      stats[stat] = manager.start(stat);
+
+    return stats;
   }
 
   toJSON() {

@@ -19,8 +19,13 @@ const ProgressBar = require('progress');
 const chalk = require('chalk')
 
 // get all log directories from the config file
+const config = require("../config.json");
 const dirs = [
-  ...new Set(require("../config.json").SITES.map(el => el.ENV.SCORM_LOG_PATH))
+  ...new Set(
+    config.SITES
+    .map(el => el.ENV.SCORM_LOG_PATH)
+    .concat(config.OLD_LOGS || [])
+  )
 ];
 
 const store = new LogStore();
@@ -31,10 +36,16 @@ async function main() {
   // process all log files
   await populateStore(dirs);
   // group all logs
-  const error = store.get(log => log.error)
-  const unfinished = store.get(log => !log.finished && !log.error)
+  // const error = store.get(log => log.error)
+  // const unfinished = store.get(log => !log.finished && !log.error)
   const success = store.get(log => !log.error && log.finished)
-  console.log(`Errors: ${error.length}`)
+  console.log(success.getStats())
+  const users = {};
+  success.getUsers().map(user => users[user] = success.get('user', user));
+  for (const [user, userStore] of Object.entries(users)) {
+    console.log(user)
+    console.log(userStore.getStats())
+  }
 }
 
 async function populateStore(dirs) {
@@ -50,7 +61,7 @@ async function populateStore(dirs) {
 async function getLogPaths(dir) {
   try {
     return (await fs.readdir(dir))
-      .filter(el => el && path.extname(el).toUpperCase() === '.LOG')
+      .filter(el => el && path.extname(el).match(/\.LOG/i))
       .map(f => path.join(dir, f));
   } catch (err) {
     console.error(`Skipping ${chalk.red(dir)}: ${err.message}`);
