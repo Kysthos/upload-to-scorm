@@ -57,7 +57,7 @@ class Log extends Writable {
       "courseName": /Course "(.+?)" uploaded successfully!/,
       "invitationLink": /Invitation link generated: (.+?)\.$/,
       "invitationPath": /Link saved to (.+)$/,
-      "error": /ERROR! Message: (.+?)$/i,
+      "error": /ERROR(.+?)$/i,
     }
   }
 
