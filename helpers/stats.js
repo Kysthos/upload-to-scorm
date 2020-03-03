@@ -74,7 +74,7 @@ async function getLogPaths(dir) {
 async function readLogs(logs) {
   try {
     const bar = new ProgressBar(
-      "Parsing logs [:bar] :current/:total (:percent) [:elapsed s]",
+      "Parsing logs [:bar] :current/:total (:percent) [:elapsed s] :rate logs/s",
       {
         total: logs.length,
         width: 25,
