@@ -2,6 +2,7 @@ const bytes = require("bytes");
 const moment = require("moment");
 const Log = require("./logParser");
 const MiddlewareManager = require("./middleware");
+const chalk = require("chalk");
 
 class LogStore {
   constructor(init) {
@@ -75,7 +76,6 @@ class LogStore {
         const fnName = `calc${value.replace(reg, firstUpper)}`;
         manager.use(stat, (obj, next) => {
           obj[value] = this[fnName](stat);
-          // obj.total = this.get(stat);
           obj.total = this.get(stat).reduce((a, b) => a + b, 0);
           next();
         });
@@ -89,8 +89,8 @@ class LogStore {
     };
     const humanizeDuration = (obj, next) => {
       for (const value of valuesToGet)
-        obj[value] = moment.duration(obj[value]).asSeconds() + " s";
-      obj.total = moment.duration(obj.total).asMinutes().toFixed(2) + " min";
+        obj[value] = this.getDurationString(moment.duration(obj[value]));
+      obj.total = this.getDurationString(moment.duration(obj.total));
       next();
     };
 
@@ -102,6 +102,44 @@ class LogStore {
     for (const stat of forStats) stats[stat] = manager.start(stat);
 
     return stats;
+  }
+
+  getDurationString(duration, colors = true) {
+    const data = {
+      days: { short: "d", color: "red" },
+      hours: { short: "h", color: "yellow" },
+      minutes: { short: "m", color: "blue" },
+      seconds: { short: "s", color: "magenta" },
+      milliseconds: { short: "ms", color: "green" }
+    };
+    const text = [];
+    for (const [fnName, params] of Object.entries(data)) {
+      const dur = duration[fnName]();
+      if (dur > 0) {
+        const str = `${dur} ${params.short}`;
+        text.push(colors ? chalk[params.color](str) : str);
+      }
+    }
+    return text.join(" ");
+  }
+
+  displayStats() {
+    const stats = this.getStats();
+    const users = this.getUsers();
+    const user = users.length === 1 ? users[0] : `[ ${users.join(", ")} ]`;
+    console.log();
+    console.log(`Displaying stats for ${chalk.magenta(user)}.`);
+    console.log("=".repeat(50));
+    console.log(`Total number of operations ${chalk.green(stats.total)}.`);
+    for (const [field, data] of Object.entries(stats)) {
+      if (field === "total") continue;
+      console.log(`${" ".repeat(2)}${chalk.red(field)}:`);
+      for (const [stat, val] of Object.entries(data)) {
+        console.log(" ".repeat(4), stat + ":", val);
+      }
+    }
+    console.log("=".repeat(50));
+    console.log();
   }
 
   toJSON() {

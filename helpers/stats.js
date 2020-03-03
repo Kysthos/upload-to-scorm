@@ -32,13 +32,11 @@ async function main() {
   const error = store.get(log => log.error);
   const unfinished = store.get(log => !log.finished && !log.error);
   const success = store.get(log => !log.error && log.finished);
-  console.log(success.getStats());
+  success.displayStats();
   const users = {};
   success.getUsers().map(user => (users[user] = success.get("user", user)));
-  for (const [user, userStore] of Object.entries(users)) {
-    console.log(user);
-    console.log(userStore.getStats());
-  }
+  for (const userStore of Object.values(users)) userStore.displayStats();
+
   console.log(
     `Total: ${store.length}. Success: ${success.length} (${(
       (success.length / store.length) *
