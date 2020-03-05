@@ -4,7 +4,6 @@ const cpuLen = require("os").cpus().length;
 process.env.UV_THREADPOOL_SIZE = cpuLen;
 
 const async = require("async");
-const { pipeline } = require("stream");
 const path = require("path");
 const { promises: fs, createReadStream } = require("fs");
 const split = require("split2");
@@ -12,6 +11,8 @@ const Log = require("./logUtilities/logParser");
 const LogStore = require("./logUtilities/logStore");
 const ProgressBar = require("progress");
 const chalk = require("chalk");
+const { promisify } = require("util");
+const pipeline = promisify(require("stream").pipeline);
 
 // get all log directories from the config file
 const config = require("../config.json");
@@ -83,21 +84,13 @@ async function readLogs(logs) {
       }
     );
     // parse all logs
-    await async.eachLimit(
-      logs,
-      cpuLen,
-      async log =>
-        new Promise((resolve, reject) => {
-          // Log class extends Writable stream, so we can pipe it
-          const parser = new Log(log);
-          pipeline(createReadStream(log), split(), parser, err => {
-            bar.tick();
-            if (err) return reject(err);
-            store.add(parser);
-            resolve();
-          });
-        })
-    );
+    await async.eachLimit(logs, cpuLen, async log => {
+      // Log class extends Writable stream, so we can pipe it
+      const parser = new Log(log);
+      await pipeline(createReadStream(log), split(), parser);
+      bar.tick();
+      store.add(parser);
+    });
     console.log(
       `Parsed ${chalk.yellow(
         store.logs.reduce((a, log) => a + log.lines.length, 0)
