@@ -19,7 +19,7 @@ const stat = fs.stat;
 const { promisify } = require("util");
 const sleep = promisify(setTimeout);
 const bytes = require("bytes");
-const loading = require('./Loading')
+const loading = require("./Loading");
 
 // set up env vars
 // require("dotenv").config();
@@ -86,7 +86,7 @@ async function main() {
     });
     // store job id
     const jobId = uploaded.data.result;
-    
+
     await loading.stop();
 
     log(`Job id assigned: ${chalk.yellow(jobId)}. Uploading.`);
@@ -117,7 +117,9 @@ async function main() {
         await loading.stop();
         checkIfUploaded = false;
         log(
-          `Course "${chalk.yellow(check.data.importResult.course.title)}" uploaded successfully!`
+          `Course "${chalk.yellow(
+            check.data.importResult.course.title
+          )}" uploaded successfully!`
         );
       } else if (check.data.message !== lastMsg) {
         await loading.stop();
@@ -141,6 +143,7 @@ async function main() {
     // so the user can actually see if everything went well or not
     exit(0);
   } catch (error) {
+    if (loading.running) await loading.stop();
     if (error.type) {
       const { err, res = {}, type = undefined } = error;
       handleError(err.message, res.statusCode, type);
